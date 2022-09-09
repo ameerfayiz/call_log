@@ -9,8 +9,12 @@ class CallLog {
 
   /// Get all call history log entries. Permissions are handled automatically
   static Future<Iterable<CallLogEntry>> get() async {
-    final Iterable<dynamic>? result = await _channel.invokeMethod('get', null);
-    return result?.map((dynamic m) => CallLogEntry.fromMap(m)) ?? _EMPTY_RESULT;
+    try {
+      final Iterable<dynamic>? result = await _channel.invokeMethod('get', null);
+      return result?.map((dynamic m) => CallLogEntry.fromMap(m)) ?? _EMPTY_RESULT;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// Query call history log entries
@@ -64,8 +68,13 @@ class CallLog {
       'cachedMatchedNumber': cachedMatchedNumber,
       'phoneAccountId': phoneAccountId,
     };
-    final Iterable<dynamic>? records = await _channel.invokeMethod('query', params);
-    return records?.map((dynamic m) => CallLogEntry.fromMap(m)) ?? _EMPTY_RESULT;
+    try {
+      final Iterable<dynamic>? records = await _channel.invokeMethod('query', params);
+      return records?.map((dynamic m) => CallLogEntry.fromMap(m)) ?? _EMPTY_RESULT;
+    }catch (e) {
+      rethrow;
+    }
+
   }
 }
 
@@ -96,7 +105,6 @@ class CallLogEntry {
     this.timestamp,
     this.cachedNumberType,
     this.cachedNumberLabel,
-    this.simDisplayName,
     this.phoneAccountId,
   });
 
@@ -111,7 +119,6 @@ class CallLogEntry {
     cachedNumberType = m['cachedNumberType'];
     cachedNumberLabel = m['cachedNumberLabel'];
     cachedMatchedNumber = m['cachedMatchedNumber'];
-    simDisplayName = m['simDisplayName'];
     phoneAccountId = m['phoneAccountId'];
   }
 
@@ -141,9 +148,6 @@ class CallLogEntry {
 
   /// todo comment
   String? cachedMatchedNumber;
-
-  /// SIM display name
-  String? simDisplayName;
 
   /// PHONE account id
   String? phoneAccountId;

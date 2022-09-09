@@ -8,8 +8,6 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Build;
 import android.provider.CallLog;
-import android.telephony.SubscriptionInfo;
-import android.telephony.SubscriptionManager;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -119,14 +117,14 @@ public class CallLogPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
         request = c;
         result = r;
 
-        String[] perm = {Manifest.permission.READ_CALL_LOG, Manifest.permission.READ_PHONE_STATE};
+        String[] perm = {Manifest.permission.READ_CALL_LOG};
         if (hasPermissions(perm)) {
             handleMethodCall();
         } else {
             if (activity != null) {
                 ActivityCompat.requestPermissions(activity, perm, 0);
             } else {
-                r.error("MISSING_PERMISSIONS", "Permission READ_CALL_LOG or READ_PHONE_STATE is required for plugin. Hovewer, plugin is unable to request permission because of background execution.", null);
+                r.error("MISSING_PERMISSIONS", "Permission READ_CALL_LOG is required for plugin. Hovewer, plugin is unable to request permission because of background execution.", null);
             }
         }
     }
@@ -136,8 +134,11 @@ public class CallLogPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
         if (requestCode == 0) {
             //CHECK IF ALL REQUESTED PERMISSIONS ARE GRANTED
             for (int grantResult : grantResults) {
-                if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
-                    return false;
+                if (grantResult == PackageManager.PERMISSION_DENIED) {
+                    if (result != null) {
+                        result.error(PERMISSION_NOT_GRANTED, null, null);
+                        cleanup();
+                    }
                 }
             }
             if (request != null) {
@@ -200,11 +201,6 @@ public class CallLogPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
      * @param query String with sql search condition
      */
     private void queryLogs(String query) {
-        SubscriptionManager subscriptionManager = ContextCompat.getSystemService(ctx, SubscriptionManager.class);
-        List<SubscriptionInfo> subscriptions = null;
-        if (subscriptionManager != null) {
-            subscriptions = subscriptionManager.getActiveSubscriptionInfoList();
-        }
         try (Cursor cursor = ctx.getContentResolver().query(
                 CallLog.Calls.CONTENT_URI,
                 CURSOR_PROJECTION,
@@ -224,7 +220,6 @@ public class CallLogPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
                 map.put("cachedNumberType", cursor.getInt(6));
                 map.put("cachedNumberLabel", cursor.getString(7));
                 map.put("cachedMatchedNumber", cursor.getString(8));
-                map.put("simDisplayName", getSimDisplayName(subscriptions, cursor.getString(9)));
                 map.put("phoneAccountId", cursor.getString(9));
                 entries.add(map);
             }
@@ -234,25 +229,6 @@ public class CallLogPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
             result.error(INTERNAL_ERROR, e.getMessage(), null);
             cleanup();
         }
-    }
-
-    /**
-     * Helper method that tries to obtian sim display name from accountId
-     *
-     * @param subscriptions Subscriptions - should represent sim cards
-     * @param accountId     Id of account to search for
-     * @return Name of the used sim card, null otherwise
-     */
-    private String getSimDisplayName(List<SubscriptionInfo> subscriptions, String accountId) {
-        if (accountId != null && subscriptions != null) {
-            for (SubscriptionInfo info : subscriptions) {
-                if (Integer.toString(info.getSubscriptionId()).equals(accountId) ||
-                        accountId.contains(info.getIccId())) {
-                    return String.valueOf(info.getDisplayName());
-                }
-            }
-        }
-        return null;
     }
 
     /**

@@ -21,7 +21,6 @@ void callbackDispatcher() {
         print('DURATION   : ${entry.duration}');
         print('ACCOUNT ID : ${entry.phoneAccountId}');
         print('ACCOUNT ID : ${entry.phoneAccountId}');
-        print('SIM NAME   : ${entry.simDisplayName}');
         print('-------------------------------------');
       }
       return true;
@@ -65,7 +64,6 @@ class _MyAppState extends State<MyApp> {
                 style: mono),
             Text('DURATION   : ${entry.duration}', style: mono),
             Text('ACCOUNT ID : ${entry.phoneAccountId}', style: mono),
-            Text('SIM NAME   : ${entry.simDisplayName}', style: mono),
           ],
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.start,
